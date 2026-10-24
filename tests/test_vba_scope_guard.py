@@ -4,19 +4,22 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SCAN = (ROOT / "vba" / "modGLScanEngine.bas").read_text(encoding="utf-8-sig")
 MAP = (ROOT / "vba" / "modGLWorkbookMap.bas").read_text(encoding="utf-8-sig")
+GATE = (ROOT / "vba" / "modGLGate.bas").read_text(encoding="utf-8-sig")
 APPLY = (ROOT / "scripts" / "apply_full_fix.ps1").read_text(encoding="utf-8-sig")
 
 
 class ScopeAndFailClosedTests(unittest.TestCase):
     def test_scan_engine_does_not_read_or_scan_gj(self):
         self.assertNotIn('Worksheets("GJ")', SCAN)
+        self.assertNotIn('Worksheets("GJ")', GATE)
+        self.assertNotIn('"GJ"', GATE)
         self.assertNotIn("Private Sub ScanGJ(", SCAN)
         self.assertIn("ScanCDJ d, yearNumber", SCAN)
         self.assertIn("ScanCRJ d, yearNumber", SCAN)
 
     def test_scan_does_not_write_calc_sheet(self):
         self.assertNotIn("WriteScannedCalc d", SCAN)
-        self.assertNotIn("Worksheets.Add", SCAN)
+        self.assertNotIn("Private Sub WriteScannedCalc(", SCAN)
 
     def test_unique_account_guard_runs_before_writeback(self):
         guard = SCAN.index("If Not ValidateGLAccountTitles(detail) Then inv = inv + 1")
@@ -34,6 +37,8 @@ class ScopeAndFailClosedTests(unittest.TestCase):
         self.assertNotIn("V8_GJMap", MAP)
         self.assertIn("V8_ResolveAccount", SCAN)
         self.assertIn("V8_ResolveAccount", MAP)
+        self.assertNotIn("BuildV8CalcSheet", GATE)
+        self.assertIn("ScanGL 2026", GATE)
 
     def test_old_mapping_writer_is_disabled(self):
         self.assertIn("DISABLED", APPLY)
