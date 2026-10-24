@@ -10,7 +10,7 @@ End Function
 
 Public Function ValidateV8Structure() As Boolean
     Dim names As Variant, n As Variant, ws As Worksheet
-    names = Array("CDJ", "CRJ", "GJ", "GL", "SUPPLIERS DATA")
+    names = Array("CDJ", "CRJ", "GL", "COA_MAP")
     For Each n In names
         If Not SheetExists(CStr(n)) Then
             ValidateV8Structure = False
@@ -22,8 +22,7 @@ Public Function ValidateV8Structure() As Boolean
     If V8_Norm(ws.Cells(13, 3).Value2) <> "DATE" Or V8_Norm(ws.Cells(14, 20).Value2) <> "DEBIT" Or V8_Norm(ws.Cells(14, 21).Value2) <> "CREDIT" Then Exit Function
     Set ws = ThisWorkbook.Worksheets("CRJ")
     If V8_Norm(ws.Cells(8, 4).Value2) <> "DATE" Or V8_Norm(ws.Cells(8, 8).Value2) <> "DEBIT" Then Exit Function
-    Set ws = ThisWorkbook.Worksheets("GJ")
-    If V8_Norm(ws.Cells(9, 2).Value2) <> "DATE" Or V8_Norm(ws.Cells(9, 6).Value2) <> "DEBIT" Or V8_Norm(ws.Cells(9, 7).Value2) <> "CREDIT" Then Exit Function
+    ' GJ structure is deliberately not inspected; it is outside GL scan scope.
     Set ws = ThisWorkbook.Worksheets("GL")
     If V8_Norm(ws.Cells(11, 6).Value2) <> "ACCOUNT TITLE" Then Exit Function
     Dim b As Long, r As Long, n As Long
@@ -38,16 +37,12 @@ End Function
 
 Public Sub RunV8Gate()
     If Not ValidateV8Structure() Then
-        MsgBox "v8.2 gate HOLD: workbook structure does not match the reviewed mapping.", vbExclamation
+        If Application.UserControl And Application.DisplayAlerts Then _
+            MsgBox "GL gate HOLD: CDJ/CRJ/GL/COA_MAP structure does not match the expected layout.", vbExclamation
         Exit Sub
     End If
-    If ValidateGLConsistency(2026) Then
-        If BuildV8CalcSheet(2026) Then
-            MsgBox "v8.2 gate PASS: posting population reconciles and 46x12 matrix exists.", vbInformation
-        Else
-            MsgBox "v8.0 gate HOLD: matrix size is not 552.", vbExclamation
-        End If
-    Else
-        MsgBox "v8.0 gate HOLD: review GL_AUDIT for unmapped or invalid activity.", vbExclamation
-    End If
+
+    ' Use the current fail-closed CDJ + CRJ scan. Do not invoke the legacy
+    ' GL_V8_CALC builder or inspect the excluded GJ worksheet.
+    ScanGL 2026
 End Sub

@@ -1,7 +1,7 @@
 ﻿Option Explicit
 
-' v8.2 exact mapping for Global-Smile_2026 workbook layout.
-' Posting sources: CDJ, CRJ, GJ. Feeder journals are not posted twice.
+' Account resolution for the Global-Smile 2026 workbook layout.
+' Posting sources in this GL scan are CDJ and CRJ only. GJ is excluded.
 
 Public Const AUDIT_SHEET As String = "GL_AUDIT"
 Public Const CALC_SHEET As String = "GL_V8_CALC"
@@ -9,9 +9,8 @@ Public Const GL_SHEET As String = "GL"
 Public Const COAMAP_SHEET As String = "COA_MAP"
 Public Const TOLERANCE As Double = 0.01
 
-' Module-level caches.  V8_GJMap is called once per journal row, so building
-' the account and alias dictionaries on every call is too slow; they are built
-' once and cleared by V8_MapReset.
+' Module-level caches. The account resolver builds dictionaries once per scan
+' and clears them through V8_MapReset.
 Private mGLByNorm As Object      ' V8_Norm(title) -> title
 Private mGLByKey As Object       ' V8_Key(title)  -> title
 Private mAlias As Object         ' V8_Key(source label) -> GL title
@@ -119,7 +118,7 @@ Public Function V8_GLAccounts() As Object
     Set V8_GLAccounts = d
 End Function
 
-Public Function V8_GJMap(ByVal raw As String) As String
+Public Function V8_ResolveAccount(ByVal raw As String) As String
     Dim k As String, d As Object, kd As String
     k = V8_Norm(raw): kd = V8_Key(raw)
     EnsureMaps
@@ -127,27 +126,27 @@ Public Function V8_GJMap(ByVal raw As String) As String
     ' Operator-editable aliases on COA_MAP win over the built-in table, so a
     ' held label can be resolved without shipping a new build.
     If Len(kd) > 0 Then
-        If mAlias.Exists(kd) Then V8_GJMap = mAlias(kd): Exit Function
+        If mAlias.Exists(kd) Then V8_ResolveAccount = mAlias(kd): Exit Function
     End If
     Select Case k
-        Case "TRANSPORATION AND TRAVEL": V8_GJMap = "Transportation and Travel"
-        Case "ADVANCES TO EMPLOYEE": V8_GJMap = "Advances to Employees"
-        Case "REPAIRS AND MAINTENANCE": V8_GJMap = "Repair and Maintenance"
-        Case "OUTPUT VAT PAYABLE": V8_GJMap = "VAT Payable"
-        Case "CLINIC SUPPLIES": V8_GJMap = "Clinic Material and Supplies"
+        Case "TRANSPORATION AND TRAVEL": V8_ResolveAccount = "Transportation and Travel"
+        Case "ADVANCES TO EMPLOYEE": V8_ResolveAccount = "Advances to Employees"
+        Case "REPAIRS AND MAINTENANCE": V8_ResolveAccount = "Repair and Maintenance"
+        Case "OUTPUT VAT PAYABLE": V8_ResolveAccount = "VAT Payable"
+        Case "CLINIC SUPPLIES": V8_ResolveAccount = "Clinic Material and Supplies"
         ' v8.1 HOLD mappings are now executable runtime mappings.
-        Case "MEDICAL EQUIPMENT": V8_GJMap = "Dental Equipment"
-        Case "COST OF REVENUE": V8_GJMap = "Clinic Material and Supplies"
-        Case "SUPPLIES": V8_GJMap = "Clinic Material and Supplies"
-        Case "BANK CHARGE": V8_GJMap = "Miscellaneous"
-        Case "CHARGES": V8_GJMap = "Miscellaneous"
+        Case "MEDICAL EQUIPMENT": V8_ResolveAccount = "Dental Equipment"
+        Case "COST OF REVENUE": V8_ResolveAccount = "Clinic Material and Supplies"
+        Case "SUPPLIES": V8_ResolveAccount = "Clinic Material and Supplies"
+        Case "BANK CHARGE": V8_ResolveAccount = "Miscellaneous"
+        Case "CHARGES": V8_ResolveAccount = "Miscellaneous"
         Case Else
             If d.Exists(k) Then
-                V8_GJMap = d(k)
+                V8_ResolveAccount = d(k)
             ElseIf Len(kd) > 0 And mGLByKey.Exists(kd) Then
                 ' Same account, different punctuation or spacing in the journal
                 ' label.  Safe because the exact match above was already tried.
-                V8_GJMap = mGLByKey(kd)
+                V8_ResolveAccount = mGLByKey(kd)
             End If
     End Select
 End Function

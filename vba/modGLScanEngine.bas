@@ -26,9 +26,13 @@ Public Sub ScanGL(Optional ByVal yearNumber As Long = 2026)
     Set d = CreateObject("Scripting.Dictionary")
     d.CompareMode = vbTextCompare
 
+    ' Fail closed if the visible GL does not define 46 distinct account titles.
+    ' Duplicate titles would receive the same normalized postings in multiple blocks.
+    If Not ValidateGLAccountTitles(detail) Then inv = inv + 1
+
     ScanCDJ d, yearNumber, gd, gc, um, inv, detail
     ScanCRJ d, yearNumber, gd, gc, um, inv, detail
-    ' ScanGJ excluded per directive: GJ not processed
+    ' GJ is out of scope: do not read or post from the GJ worksheet.
 
     ' Fail-closed validation gate:
     ' If journals are out of balance, have unmapped accounts, or have invalid data,
@@ -126,7 +130,7 @@ Private Sub ScanCDJ(ByVal d As Object, ByVal yr As Long, ByRef gd As Double, ByR
         ' from the row rather than trusting a stale copied amount in T/U.
         raw = SafeText(ws.Cells(r, 19).Value2)
         If Len(raw) > 0 And V8_Norm(raw) <> "TOTAL" And V8_Norm(raw) <> "SUNDRY ACCOUNT" Then
-            a = V8_GJMap(raw)
+            a = V8_ResolveAccount(raw)
             If Len(a) = 0 And GLTitleExists(raw) Then a = GLTitleOf(raw)
             If Len(a) = 0 Then
                 um = um + Abs(cash) + otherDb + otherCr
@@ -244,38 +248,37 @@ Private Sub ScanCRJ(ByVal d As Object, ByVal yr As Long, ByRef gd As Double, ByR
     Next rr
 End Sub
 
-Private Sub ScanGJ(ByVal d As Object, ByVal yr As Long, ByRef gd As Double, ByRef gc As Double, ByRef um As Double, ByRef inv As Long, ByRef detail As String)
-    Dim ws As Worksheet, r As Long, m As Long, cur As Long, raw As String, a As String
-    Dim ok As Boolean, v As Double
-    Set ws = ThisWorkbook.Worksheets("GJ")
-    cur = 0
+' GJ scan intentionally removed. This workbook's GL input scope is CDJ + CRJ only.
 
-    For r = 11 To ws.Cells(ws.Rows.count, 5).End(xlUp).Row
-        m = V8_Month(ws.Cells(r, 2).Value2)
-        If m > 0 Then cur = m
-        raw = SafeText(ws.Cells(r, 5).Value2)
-        If cur = 0 Or Len(raw) = 0 Or InStr(1, V8_Norm(raw), "TOTAL", vbTextCompare) > 0 Then GoTo NextRow
-        If V8_Norm(raw) = "RECORDING DEPRECIATION FOR THE MONTH" Or _
-           V8_Norm(raw) = "LIQUIDATION OF PCF FOR THE MONTH" Or _
-           V8_Norm(raw) = "CLOSING OF INPUT VAT FOR Q1 2026" Then GoTo NextRow
+Private Function ValidateGLAccountTitles(ByRef detail As String) As Boolean
+    Dim ws As Worksheet, seen As Object
+    Dim b As Long, r As Long, title As String, key As String
+    Dim valid As Boolean
 
-        a = V8_GJMap(raw)
-        ok = True: v = V8_Number(ws.Cells(r, 6).Value2, ok)
-        If Not ok Then inv = inv + 1
-        If ok And Abs(v) > TOLERANCE Then
-            If Len(a) = 0 Then um = um + Abs(v): detail = detail & "GJ!" & ws.Cells(r, 5).address(False, False) & " -> " & raw & " debit" & vbCrLf _
-            Else AddPost d, a, cur, v, 0#: gd = gd + v
+    Set ws = ThisWorkbook.Worksheets(GL_SHEET)
+    Set seen = CreateObject("Scripting.Dictionary")
+    seen.CompareMode = vbTextCompare
+    valid = True
+
+    For b = 0 To GL_BLOCKS - 1
+        r = FIRST_GL_ROW + b * GL_STRIDE
+        title = SafeText(ws.Cells(r, 6).Value2)
+        key = V8_Norm(title)
+
+        If Len(key) = 0 Then
+            detail = detail & "GL!F" & r & " missing account title for block " & (b + 1) & vbCrLf
+            valid = False
+        ElseIf seen.Exists(key) Then
+            detail = detail & "GL!F" & r & " duplicate account title '" & title & _
+                     "' (first seen at GL!F" & seen(key) & "); write-back held" & vbCrLf
+            valid = False
+        Else
+            seen.Add key, r
         End If
+    Next b
 
-        ok = True: v = V8_Number(ws.Cells(r, 7).Value2, ok)
-        If Not ok Then inv = inv + 1
-        If ok And Abs(v) > TOLERANCE Then
-            If Len(a) = 0 Then um = um + Abs(v): detail = detail & "GJ!" & ws.Cells(r, 5).address(False, False) & " -> " & raw & " credit" & vbCrLf _
-            Else AddPost d, a, cur, 0#, v: gc = gc + v
-        End If
-NextRow:
-    Next r
-End Sub
+    ValidateGLAccountTitles = valid
+End Function
 
 Private Sub WriteScannedGL(ByVal ws As Worksheet, ByVal d As Object)
     Dim b As Long, m As Long, r As Long, k As String, x As Variant
@@ -302,31 +305,7 @@ Fail:
     If Err.Number <> 0 Then Err.Raise Err.Number, Err.Source, Err.description
 End Sub
 
-Private Sub WriteScannedCalc(ByVal d As Object)
-    Dim ws As Worksheet, gl As Worksheet, b As Long, m As Long, r As Long, k As String
-    Dim x As Variant, title As String, bal As Double
-    Set gl = ThisWorkbook.Worksheets(GL_SHEET)
-    On Error Resume Next: Set ws = ThisWorkbook.Worksheets(CALC_SHEET): On Error GoTo 0
-    If ws Is Nothing Then Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.count)): ws.name = CALC_SHEET
-    ws.Cells.Clear
-    ws.Range("A1:E1").Value = Array("Account Title", "Month", "Debit", "Credit", "Ending Balance")
-    r = 2
-    For b = 0 To GL_BLOCKS - 1
-        title = SafeText(gl.Cells(FIRST_GL_ROW + b * GL_STRIDE, 6).Value2)
-        bal = 0#
-        For m = 1 To MONTHS
-            k = V8_Norm(title) & "|" & CStr(m)
-            If d.Exists(k) Then x = d(k) Else x = Array(0#, 0#)
-            bal = bal + CDbl(x(0)) - CDbl(x(1))
-            ws.Cells(r, 1).Value2 = title
-            ws.Cells(r, 2).Value2 = m
-            ws.Cells(r, 3).Value2 = CDbl(x(0))
-            ws.Cells(r, 4).Value2 = CDbl(x(1))
-            ws.Cells(r, 5).Value2 = bal
-            r = r + 1
-        Next m
-    Next b
-End Sub
+' Legacy GL_V8_CALC writer removed: output is the existing GL sheet only.
 
 Private Sub WriteScanAudit(ByVal gd As Double, ByVal gc As Double, ByVal um As Double, ByVal inv As Long, ByVal detail As String)
     Dim ws As Worksheet, r As Long, status As String
