@@ -305,31 +305,7 @@ Fail:
     If Err.Number <> 0 Then Err.Raise Err.Number, Err.Source, Err.description
 End Sub
 
-Private Sub WriteScannedCalc(ByVal d As Object)
-    Dim ws As Worksheet, gl As Worksheet, b As Long, m As Long, r As Long, k As String
-    Dim x As Variant, title As String, bal As Double
-    Set gl = ThisWorkbook.Worksheets(GL_SHEET)
-    On Error Resume Next: Set ws = ThisWorkbook.Worksheets(CALC_SHEET): On Error GoTo 0
-    If ws Is Nothing Then Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.count)): ws.name = CALC_SHEET
-    ws.Cells.Clear
-    ws.Range("A1:E1").Value = Array("Account Title", "Month", "Debit", "Credit", "Ending Balance")
-    r = 2
-    For b = 0 To GL_BLOCKS - 1
-        title = SafeText(gl.Cells(FIRST_GL_ROW + b * GL_STRIDE, 6).Value2)
-        bal = 0#
-        For m = 1 To MONTHS
-            k = V8_Norm(title) & "|" & CStr(m)
-            If d.Exists(k) Then x = d(k) Else x = Array(0#, 0#)
-            bal = bal + CDbl(x(0)) - CDbl(x(1))
-            ws.Cells(r, 1).Value2 = title
-            ws.Cells(r, 2).Value2 = m
-            ws.Cells(r, 3).Value2 = CDbl(x(0))
-            ws.Cells(r, 4).Value2 = CDbl(x(1))
-            ws.Cells(r, 5).Value2 = bal
-            r = r + 1
-        Next m
-    Next b
-End Sub
+' Legacy GL_V8_CALC writer removed: output is the existing GL sheet only.
 
 Private Sub WriteScanAudit(ByVal gd As Double, ByVal gc As Double, ByVal um As Double, ByVal inv As Long, ByVal detail As String)
     Dim ws As Worksheet, r As Long, status As String
