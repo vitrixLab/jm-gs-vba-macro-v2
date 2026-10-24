@@ -12,8 +12,8 @@
 
 ## Source-level findings
 
-1. The previous scan module contained a ScanGJ procedure that read the GJ worksheet. The proposed source removes that procedure; the active scan path calls CDJ and CRJ only.
-2. The scan engine previously allowed repeated GL account titles to receive the same normalized account/month postings in multiple blocks. The proposed source validates all 46 account-title rows and holds write-back on blank or duplicate titles.
+1. The previous scan module contained a ScanGJ procedure that read the GJ worksheet. The proposed source removes that procedure and removes GJ structure inspection from the legacy gate; the active scan path calls CDJ and CRJ only.
+2. The scan engine previously allowed repeated GL account titles to receive the same normalized account/month postings in multiple blocks. The proposed source validates all 46 account-title rows and holds write-back on blank or duplicate titles. The legacy GL_V8_CALC writer and gate call were removed from the proposed source.
 3. The mapping update script in the prior baseline hard-coded ten COA mappings and marked them MAPPED without retaining accounting approval evidence. The proposed change neutralizes that script; no such mapping is represented here as approved.
 4. The source calls an account resolver for CDJ sundry labels. Resolver output is not proof of accounting authorization; only operator-approved COA_MAP rows may be used.
 
