@@ -1,3 +1,7 @@
+# Python cache
+__pycache__/
+*.pyc
+
 # Scratch inspection files
 _inspect/
 *.tmp
