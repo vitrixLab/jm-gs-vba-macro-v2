@@ -1,0 +1,6 @@
+# Scratch inspection files
+_inspect/
+*.tmp
+*.log
+~*
+*BACKUP.xlsm
