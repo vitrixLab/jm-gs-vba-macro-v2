@@ -26,7 +26,7 @@ No accounting mapping should be marked approved solely to make a gate pass. The 
 
 ## Verification boundary
 
-The current PR adds a source-level guard for duplicate/missing GL account titles and removes the GJ scan procedure. It does **not** certify that the embedded VBA in either XLSM workbook matches the exported source, compiles in Excel, or passes a live refresh. Those require workbook-level verification in Excel Desktop/COM.
+The current PR adds a source-level guard for duplicate/missing GL account titles, removes the GJ scan procedure and GJ structure checks, and removes the legacy calculation-sheet writer. It does **not** certify that the embedded VBA in either XLSM workbook matches the exported source, compiles in Excel, or passes a live refresh. Those require workbook-level verification in Excel Desktop/COM.
 
 Run source-level checks:
 
