@@ -1,0 +1,294 @@
+Option Explicit
+
+Private Const START_ROW As Long = 8
+Private Const COL_TIN As Integer = 4
+Private Const COL_NAME As Integer = 5
+Private Const COL_ADDRESS As Integer = 6
+Private Const COL_COA As Integer = 7
+Private Const COL_REF As Integer = 8
+Private Const COL_DEBIT_MIRROR As Integer = 9
+Private Const COL_DEBIT As Integer = 10
+Private Const COL_CREDIT_MIRROR As Integer = 12
+Private Const COL_CREDIT As Integer = 13
+Private Const COL_GROSS As Integer = 14          ' N = Amount (Net, no VAT)
+Private Const COL_FULL_ID As Integer = 17
+
+' ============================================================
+' COA LIST & SELECT
+' ============================================================
+Private Function GetCOAList() As Variant
+    Static coaArray As Variant
+    If IsEmpty(coaArray) Then
+        coaArray = Array( _
+            "Representation", "Clinicians Fee - Corporators", "Value Added Tax Payable", _
+            "Pantry Supplies", "Taxes and Licences", "Miscellaneous", "Advances to Employee", _
+            "Government ER Share Cont", "Delivery", "Repairs and Maintenance", _
+            "Clinicians Fee - Visiting", "Association Dues", "Advertisement", _
+            "Clinic Materials and Supplies", "Transportation and Travel", "Fuel and Oil", _
+            "Supplies", "Rental", "Communication", "Professional Fees" _
+        )
+    End If
+    GetCOAList = coaArray
+End Function
+
+Private Function SelectCOA() As String
+    Dim coaList As Variant, i As Integer, inputStr As String, userInput As String, idx As Integer
+    coaList = GetCOAList()
+    inputStr = "Select Chart of Account:" & vbCrLf
+    For i = LBound(coaList) To UBound(coaList)
+        inputStr = inputStr & (i + 1) & ". " & coaList(i) & vbCrLf
+    Next i
+    inputStr = inputStr & "Enter number (1-" & UBound(coaList) + 1 & "):"
+    userInput = InputBox(inputStr, "Chart of Account Selection")
+    If userInput = "" Then SelectCOA = "": Exit Function
+    If IsNumeric(userInput) Then
+        idx = CInt(userInput) - 1
+        If idx >= LBound(coaList) And idx <= UBound(coaList) Then SelectCOA = coaList(idx): Exit Function
+    End If
+    MsgBox "Invalid selection.", vbExclamation
+    SelectCOA = SelectCOA()
+End Function
+
+' ============================================================
+' LOOKUP (uses modEngine)
+' ============================================================
+Private Sub LookupByTIN(rowNum As Long, tin As String)
+    Dim data As Variant
+    Dim name As String, address As String, coa As String, msg As String
+
+    tin = Trim(tin): If tin = "" Then Exit Sub
+    data = modEngine.GetSupplierByTIN(tin)
+
+    If Not IsArray(data) Then
+        ' 1) TIN is shared by DIFFERENT suppliers: never guess, never offer "Add?"
+        If modEngine.IsAmbiguousTIN(tin) Then
+            MsgBox "TIN '" & tin & "' is assigned to more than one supplier in SUPPLIERS DATA:" & _
+                   vbCrLf & vbCrLf & modEngine.AmbiguousNamesFor(tin) & vbCrLf & vbCrLf & _
+                   "Correct SUPPLIERS DATA, then enter the TIN again.", vbExclamation, "Ambiguous TIN"
+            Exit Sub
+        End If
+
+        ' 2) Genuinely missing: ask ONCE
+        If MsgBox("TIN '" & tin & "' not found. Add?", vbYesNo + vbQuestion) <> vbYes Then Exit Sub
+
+        name = Trim(Me.Cells(rowNum, COL_NAME).Value)
+        If name = "" Then name = Trim(InputBox("Supplier Name:"))
+        If name = "" Then Exit Sub
+        address = Trim(Me.Cells(rowNum, COL_ADDRESS).Value)
+        If address = "" Then address = Trim(InputBox("Address:"))
+        coa = Trim(Me.Cells(rowNum, COL_COA).Value)
+        If coa = "" Then coa = SelectCOA()
+        If coa = "" Then Exit Sub
+
+        ' 3) Add + verify.  NO recursive LookupByTIN call, so it cannot loop.
+        If Not modEngine.AddSupplierRecord(tin, name, address, coa, msg) Then
+            MsgBox msg, vbExclamation, "Supplier not added"
+            Exit Sub
+        End If
+        data = modEngine.GetSupplierByTIN(tin)
+        If Not IsArray(data) Then
+            MsgBox "Supplier was saved but still cannot be resolved. Check SUPPLIERS DATA.", _
+                   vbExclamation, "Supplier lookup"
+            Exit Sub
+        End If
+    End If
+
+    Me.Cells(rowNum, COL_NAME).Value = data(0)
+    Me.Cells(rowNum, COL_ADDRESS).Value = data(1)
+    Me.Cells(rowNum, COL_COA).Value = data(2)
+End Sub
+
+Private Sub LookupByName(rowNum As Long, name As String)
+    Dim data As Variant
+    Dim tin As String, address As String, coa As String, msg As String
+
+    name = Trim(name): If name = "" Then Exit Sub
+    data = modEngine.GetSupplierByName(name)
+
+    If Not IsArray(data) Then
+        If MsgBox("Supplier '" & name & "' not found. Add?", vbYesNo + vbQuestion) <> vbYes Then Exit Sub
+
+        tin = Trim(Me.Cells(rowNum, COL_TIN).Value)
+        If tin = "" Then tin = Trim(InputBox("TIN:"))
+        If tin = "" Then Exit Sub
+        address = Trim(Me.Cells(rowNum, COL_ADDRESS).Value)
+        If address = "" Then address = Trim(InputBox("Address:"))
+        coa = Trim(Me.Cells(rowNum, COL_COA).Value)
+        If coa = "" Then coa = SelectCOA()
+        If coa = "" Then Exit Sub
+
+        If Not modEngine.AddSupplierRecord(tin, name, address, coa, msg) Then
+            MsgBox msg, vbExclamation, "Supplier not added"
+            Exit Sub
+        End If
+        data = modEngine.GetSupplierByName(name)
+        If Not IsArray(data) Then
+            MsgBox "Supplier was saved but still cannot be resolved. Check SUPPLIERS DATA.", _
+                   vbExclamation, "Supplier lookup"
+            Exit Sub
+        End If
+    End If
+
+    Me.Cells(rowNum, COL_TIN).Value = data(0)
+    Me.Cells(rowNum, COL_ADDRESS).Value = data(1)
+    Me.Cells(rowNum, COL_COA).Value = data(2)
+End Sub
+
+' ============================================================
+' ADD SUPPLIER TO MASTER + UPDATE CACHE
+' ============================================================
+
+' ============================================================
+' CLEAR SUPPLIER ROW
+' ============================================================
+Private Sub ClearSupplierRow(rowNum As Long)
+    Me.Cells(rowNum, COL_NAME).Value = ""
+    Me.Cells(rowNum, COL_ADDRESS).Value = ""
+    Me.Cells(rowNum, COL_COA).Value = ""
+End Sub
+
+' ============================================================
+' CALCULATE TOTALS
+' ============================================================
+Private Sub CalculateTotals(rowNum As Long)
+    Dim startRow As Long, endRow As Long, debitSum As Double, creditSum As Double
+    startRow = FindBlockStart(rowNum): endRow = rowNum - 1
+    If endRow < startRow Then Exit Sub
+    debitSum = Application.WorksheetFunction.Sum(Me.Range(Me.Cells(startRow, COL_DEBIT), Me.Cells(endRow, COL_DEBIT)))
+    creditSum = Application.WorksheetFunction.Sum(Me.Range(Me.Cells(startRow, COL_CREDIT), Me.Cells(endRow, COL_CREDIT)))
+    Me.Cells(rowNum, COL_DEBIT).Value = debitSum
+    Me.Cells(rowNum, COL_CREDIT).Value = creditSum
+    Me.Cells(rowNum, COL_DEBIT_MIRROR).Value = debitSum
+    Me.Cells(rowNum, COL_CREDIT_MIRROR).Value = creditSum
+End Sub
+
+Private Function FindBlockStart(rowNum As Long) As Long
+    Dim i As Long, val As String
+    For i = rowNum - 1 To START_ROW Step -1
+        val = Trim(Me.Cells(i, COL_TIN).Value)
+        If LCase(val) = "total" Then FindBlockStart = i + 1: Exit Function
+    Next i
+    FindBlockStart = START_ROW
+End Function
+
+' ============================================================
+' MANUAL SYNC MACRO
+' ============================================================
+Sub ManualSyncToCDJ()
+    Dim rowNum As Long
+    rowNum = ActiveCell.Row
+    If rowNum < START_ROW Then
+        MsgBox "Select a row below row 8.", vbExclamation
+        Exit Sub
+    End If
+    If Me.Cells(rowNum, COL_REF).Value = "" Then
+        MsgBox "No reference ID (PNV-XXXXX) in column H. Enter Amount first.", vbExclamation
+        Exit Sub
+    End If
+    Call modEngine.SyncPJNonVatToCDJ(Me, rowNum)
+    MsgBox "Sync attempted for row " & rowNum & ". Check target sheet.", vbInformation
+End Sub
+
+' ============================================================
+' MAIN TRIGGER
+' ============================================================
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Dim rngLookup As Range, rngSync As Range, cell As Range
+    Dim currentTimestamp As String, newRef As String
+
+    ' ---- PART 1: LOOKUP, AMOUNT (NO VAT), ID STAMPING AND SYNC ----
+    Set rngLookup = Intersect(Target, Union(Me.Range("B:B"), Me.Range("D:D"), Me.Range("E:E"), _
+                                            Me.Range("F:F"), Me.Range("G:G"), _
+                                            Me.Range("N:N")))    ' Column N = Net Amount
+    If Not rngLookup Is Nothing Then
+        Application.EnableEvents = False
+        Application.ScreenUpdating = False
+        Application.Calculation = xlCalculationManual
+        On Error GoTo CleanupLookup
+        currentTimestamp = Format(Now, "yyyymmdd-HHnnSS")
+
+        For Each cell In rngLookup
+            If cell.Row >= START_ROW Then
+                If cell.Column = COL_TIN Or cell.Column = COL_NAME Then
+                    Dim tinVal As String, nameVal As String
+                    tinVal = Trim(Me.Cells(cell.Row, COL_TIN).Value)
+                    nameVal = Trim(Me.Cells(cell.Row, COL_NAME).Value)
+                    If LCase(tinVal) = "total" Or LCase(nameVal) = "total" Then
+                        Call CalculateTotals(cell.Row)
+                        GoTo NextLookup
+                    End If
+                    If tinVal <> "" Then
+                        Call LookupByTIN(cell.Row, tinVal)
+                    ElseIf nameVal <> "" Then
+                        Call LookupByName(cell.Row, nameVal)
+                    Else
+                        Call ClearSupplierRow(cell.Row)
+                    End If
+                End If
+
+                ' ---- NON-VAT AMOUNT (NO VAT) ----
+                If Me.Cells(cell.Row, COL_GROSS).Value <> "" And _
+                   Me.Cells(cell.Row, COL_TIN).Value <> "TOTAL" And _
+                   Me.Cells(cell.Row, COL_NAME).Value <> "TOTAL" Then
+
+                    ' Set J = N, M = 0
+                    Me.Cells(cell.Row, COL_DEBIT).Value = Me.Cells(cell.Row, COL_GROSS).Value
+                    Me.Cells(cell.Row, COL_CREDIT).Value = 0
+                    Me.Cells(cell.Row, COL_DEBIT_MIRROR).Value = Me.Cells(cell.Row, COL_GROSS).Value
+                    Me.Cells(cell.Row, COL_CREDIT_MIRROR).Value = 0
+
+                    ' ---- ID STAMPING (PNV-XXXXX) AND SYNC ----
+                    If Me.Cells(cell.Row, COL_TIN).Value <> "" And _
+                       Me.Cells(cell.Row, COL_NAME).Value <> "" And _
+                       Me.Cells(cell.Row, COL_COA).Value <> "" Then
+                        If Me.Cells(cell.Row, COL_REF).Value = "" Then
+                            newRef = modEngine.GetNextPJNumber()       ' Uses sequence from AA13
+                            newRef = "PNV-" & Right(newRef, 5)         ' Change prefix to PNV
+                            Me.Cells(cell.Row, COL_REF).Value = newRef
+                            Me.Cells(cell.Row, COL_FULL_ID).Value = "PNVINV-" & currentTimestamp & "-" & Right(newRef, 5)
+                        End If
+
+                        ' ---- SYNC TO CDJ (New or Updated) ----
+                        Call modEngine.SyncPJNonVatToCDJ(Me, cell.Row)
+                    End If
+                End If
+            End If
+NextLookup:
+        Next cell
+
+CleanupLookup:
+        Application.EnableEvents = True
+        Application.ScreenUpdating = True
+        Application.Calculation = xlCalculationAutomatic
+    End If
+
+    ' ---- PART 2: SYNC (Triggered by Column H) ----
+    Set rngSync = Intersect(Target, Me.Range("H:H"))
+    If Not rngSync Is Nothing Then
+        Application.EnableEvents = False
+        Application.ScreenUpdating = False
+        Application.Calculation = xlCalculationManual
+        On Error GoTo CleanupSync
+
+        For Each cell In rngSync
+            If cell.Row >= START_ROW Then
+                newRef = Trim(Me.Cells(cell.Row, COL_REF).Value)
+                If newRef <> "" And newRef <> "TOTAL" Then
+                    If Me.Cells(cell.Row, COL_TIN).Value <> "" And _
+                       Me.Cells(cell.Row, COL_NAME).Value <> "" And _
+                       Me.Cells(cell.Row, COL_COA).Value <> "" And _
+                       Me.Cells(cell.Row, COL_GROSS).Value <> "" Then
+                        Call modEngine.SyncPJNonVatToCDJ(Me, cell.Row)
+                    End If
+                End If
+            End If
+        Next cell
+
+CleanupSync:
+        Application.EnableEvents = True
+        Application.ScreenUpdating = True
+        Application.Calculation = xlCalculationAutomatic
+    End If
+End Sub
+
+

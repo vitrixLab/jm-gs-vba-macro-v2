@@ -1,0 +1,34 @@
+Sub CheckDuplicates()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim j As Long
+    Dim name1 As String, add1 As String
+    Dim name2 As String, add2 As String
+    Dim found As Boolean
+    
+    Set ws = ThisWorkbook.Sheets("SUPPLIERS DATA")
+    lastRow = ws.Cells(ws.Rows.count, "D").End(xlUp).Row
+    found = False
+    
+    For i = 2 To lastRow
+        name1 = ws.Cells(i, "D").Value
+        add1 = ws.Cells(i, "E").Value
+        If name1 <> "" And add1 <> "" And add1 <> "—" Then
+            For j = i + 1 To lastRow
+                name2 = ws.Cells(j, "D").Value
+                add2 = ws.Cells(j, "E").Value
+                If name1 = name2 And add1 = add2 Then
+                    Debug.Print "DUPLICATE: Row " & i & " and Row " & j & " - " & name1 & " | " & add1
+                    found = True
+                End If
+            Next j
+        End If
+    Next i
+    
+    If Not found Then
+        MsgBox "No duplicates found.", vbInformation
+    Else
+        MsgBox "Duplicates found! Check Immediate Window (Ctrl+G).", vbExclamation
+    End If
+End Sub

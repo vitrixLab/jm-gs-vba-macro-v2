@@ -1,0 +1,88 @@
+Option Explicit
+
+' ============================================================
+' SJ — Worksheet module
+' Delegates CRJ sync + invoice numbering to modEngine
+' ============================================================
+
+Private Const START_ROW As Long = 10
+
+' --- Column layout (must match modEngine.SJ_COL_* constants) ---
+Private Const COL_DATE As Integer = 3           ' C
+Private Const COL_CUSTOMER As Integer = 6       ' F
+Private Const COL_INVOICE As Integer = 9        ' I
+Private Const COL_AMOUNT As Integer = 10        ' J
+Private Const COL_DISCOUNT As Integer = 11      ' K
+Private Const COL_OUTPUTVAT As Integer = 13     ' M
+Private Const COL_NETSALES As Integer = 15      ' O
+Private Const COL_REFERENCE As Integer = 21     ' U
+
+' ============================================================
+' Sync one SJ row to CRJ (via modEngine)
+' ============================================================
+Private Sub SyncToCRJ(ByVal sourceRow As Long)
+    modEngine.SyncSJToCRJ Me, sourceRow
+End Sub
+
+' ============================================================
+' MAIN TRIGGER
+' ============================================================
+Private Sub Worksheet_Change(ByVal Target As Range)
+    Dim rng As Range, cell As Range
+
+    ' Watch customer (F), amount (J), discount (K) edits
+    Set rng = Intersect(Target, Union(Me.Range("F:F"), Me.Range("J:K")))
+    If rng Is Nothing Then Exit Sub
+
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    On Error GoTo Cleanup
+
+    For Each cell In rng
+        If cell.Row >= START_ROW _
+           And UCase$(Trim(CStr(Me.Cells(cell.Row, 1).Value))) <> "TOTAL" Then
+
+            ' ---- Number formats ----
+            Me.Cells(cell.Row, COL_AMOUNT).NumberFormat = _
+                "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+            Me.Cells(cell.Row, COL_DISCOUNT).NumberFormat = _
+                "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+            Me.Cells(cell.Row, COL_OUTPUTVAT).NumberFormat = _
+                "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+            Me.Cells(cell.Row, COL_NETSALES).NumberFormat = _
+                "_(* #,##0.00_);_(* (#,##0.00);_(* ""-""??_);_(@_)"
+
+            ' ---- Formulas (J and K are the amount columns) ----
+            ' Output VAT = (Amount - Discount) * 0.107142857
+            Me.Cells(cell.Row, COL_OUTPUTVAT).Formula = _
+                "=IF(J" & cell.Row & "-K" & cell.Row & "=0,0," & _
+                "(J" & cell.Row & "-K" & cell.Row & ")*0.107142857)"
+
+            ' Net Sales = Amount - Discount - Output VAT
+            Me.Cells(cell.Row, COL_NETSALES).Formula = _
+                "=J" & cell.Row & "-K" & cell.Row & "-M" & cell.Row
+
+            ' ---- Auto-assign invoice number (via engine) ----
+            If Me.Cells(cell.Row, COL_INVOICE).Value = "" _
+               And Me.Cells(cell.Row, COL_DATE).Value <> "" _
+               And Me.Cells(cell.Row, COL_AMOUNT).Value <> "" Then
+                Me.Cells(cell.Row, COL_INVOICE).Value = modEngine.GetNextInvoiceNumber()
+            End If
+        End If
+    Next cell
+
+    ' ---- CRJ SYNCHRONIZATION ----
+    For Each cell In rng
+        If cell.Row >= START_ROW _
+           And Me.Cells(cell.Row, COL_INVOICE).Value <> "" _
+           And Me.Cells(cell.Row, COL_AMOUNT).Value <> "" Then
+            Call SyncToCRJ(cell.Row)
+        End If
+    Next cell
+
+Cleanup:
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+End Sub
