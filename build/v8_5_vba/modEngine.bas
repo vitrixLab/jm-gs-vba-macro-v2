@@ -440,6 +440,8 @@ Public Function CDJReserveRow(ByVal ws As Worksheet, ByVal mth As Integer) As Lo
     If mth < 1 Or mth > 12 Then Exit Function
     atRow = CDJTotalRow(ws, mth)
     If atRow = 0 Then Exit Function
+    Dim eventsWas As Boolean
+    eventsWas = Application.EnableEvents
     On Error GoTo Failed
     Application.EnableEvents = False
     ws.Rows(atRow).Insert Shift:=xlShiftDown, CopyOrigin:=xlFormatFromLeftOrAbove
@@ -456,7 +458,7 @@ Public Function CDJReserveRow(ByVal ws As Worksheet, ByVal mth As Integer) As Lo
     Call ShiftCDJRefCache(atRow)
     CDJReserveRow = atRow
 Done:
-    Application.EnableEvents = True
+    Application.EnableEvents = eventsWas
     Exit Function
 Failed:
     CDJReserveRow = 0
