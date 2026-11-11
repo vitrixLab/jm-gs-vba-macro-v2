@@ -1173,6 +1173,7 @@ Public Sub ResetCRJ()
     If ws Is Nothing Then MsgBox "CRJ sheet not found!", vbCritical: Exit Sub
     Application.ScreenUpdating = False
     Application.EnableEvents = False
+    On Error GoTo Cleanup
     lastRow = ws.Cells(ws.Rows.count, CRJ_COL_INVOICE).End(xlUp).Row
     If lastRow >= CRJ_DATA_START Then ws.Rows(CRJ_DATA_START & ":" & lastRow).ClearContents
     ws.Cells(CRJ_ROW_SEQ, CRJ_COL_SEQ).Value = 0
@@ -1186,6 +1187,13 @@ Public Sub ResetCRJ()
     Application.ScreenUpdating = True
     MsgBox "CRJ has been reset." & vbCrLf & _
            "Sequence (Q8) = 0, Next row (Q9) = " & CRJ_DATA_START, vbInformation
+    Exit Sub
+Cleanup:
+    On Error Resume Next
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    On Error GoTo 0
+    Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
 
 Public Sub ResetCDJ()
@@ -1199,6 +1207,7 @@ Public Sub ResetCDJ()
     If ws Is Nothing Then MsgBox "CDJ sheet not found!", vbCritical: Exit Sub
     Application.ScreenUpdating = False
     Application.EnableEvents = False
+    On Error GoTo Cleanup
     lastRow = ws.Cells(ws.Rows.count, CDJ_COL_REF).End(xlUp).Row
     If lastRow >= CDJ_DATA_START Then ws.Rows(CDJ_DATA_START & ":" & lastRow).ClearContents
     ws.Cells(CDJ_ROW_SEQ, CDJ_COL_SEQ).Value = 0
@@ -1212,6 +1221,13 @@ Public Sub ResetCDJ()
     Application.ScreenUpdating = True
     MsgBox "CDJ has been reset." & vbCrLf & _
            "Sequence (Z13) = 0, Next row (Z14) = " & CDJ_DATA_START, vbInformation
+    Exit Sub
+Cleanup:
+    On Error Resume Next
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    On Error GoTo 0
+    Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
 
 ' ============================================================
