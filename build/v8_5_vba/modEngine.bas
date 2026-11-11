@@ -127,19 +127,39 @@ Private gInitializedCRJ As Boolean
 ' INIT
 ' ============================================================
 Public Sub InitializeEngine(Optional targetSheet As String = "CDJ")
-    On Error Resume Next
+    Dim failedLoader As String
+    Dim wsCheck As Worksheet
+    failedLoader = ""
+    On Error GoTo InitFail
     If Trim$(targetSheet) = "" Then targetSheet = "CDJ"
+    On Error Resume Next
+    Set wsCheck = ThisWorkbook.Sheets(targetSheet)
+    On Error GoTo InitFail
+    If wsCheck Is Nothing Then Err.Raise vbObjectError + 1000, "InitializeEngine", "Target sheet '" & targetSheet & "' not found"
+    Set wsCheck = Nothing
+    On Error Resume Next
+    Set wsCheck = ThisWorkbook.Sheets("SUPPLIERS DATA")
+    On Error GoTo InitFail
+    If wsCheck Is Nothing Then Err.Raise vbObjectError + 1001, "InitializeEngine", "'SUPPLIERS DATA' sheet not found"
     gSyncSheet = targetSheet
     Set dictTIN = CreateObject("Scripting.Dictionary")
     Set dictName = CreateObject("Scripting.Dictionary")
     Set dictRef = CreateObject("Scripting.Dictionary")
-    Call LoadSuppliers
-    Call LoadCDJHeaders
-    Call LoadCDJReferences
-    Call LoadSequence
-    Call LoadNextRow
+    failedLoader = "LoadSuppliers": Call LoadSuppliers
+    failedLoader = "LoadCDJHeaders": Call LoadCDJHeaders
+    failedLoader = "LoadCDJReferences": Call LoadCDJReferences
+    failedLoader = "LoadSequence": Call LoadSequence
+    failedLoader = "LoadNextRow": On Error Resume Next: Call LoadNextRow: On Error GoTo InitFail
     gInitialized = True
     On Error GoTo 0
+    Exit Sub
+InitFail:
+    On Error Resume Next
+    If Application.UserControl And Application.DisplayAlerts Then _
+        MsgBox "InitializeEngine failed: " & failedLoader & vbCrLf & Err.Number & ": " & Err.Description, vbExclamation
+    gInitialized = False
+    On Error GoTo 0
+    Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
 
 Public Sub InitializeCRJ()
