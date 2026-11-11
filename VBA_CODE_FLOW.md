@@ -32,7 +32,7 @@ The workbook has 15 non-empty VBA components with 146 declared procedures. `modE
 | PJ Non-Vat value edit | `Sheet11.Worksheet_Change` | same helper pattern | Supplier lookup, non-VAT amount, PNV reference, CDJ sync | PJ Non-Vat, CDJ |
 | PJ Non-Vat2 value edit | `Sheet9.Worksheet_Change` | `modPJSync` helpers | Legacy lookup, totals, PNV reference, direct CDJ sync | PJ Non-Vat2, CDJ |
 | SJ value edit | `Sheet3.Worksheet_Change` | `LookupCustomer` / `GetNextInvoiceNumber` | Customer defaults, VAT/net formulas, invoice ID, CRJ sync | SJ, CRJ |
-| SJ2 value edit | `Sheet8.Worksheet_Change` | `GetNextInvoiceNumber` / `SyncToCRJ` | Same sales formulas and CRJ sync with alternate numbering | SJ2, CRJ |
+| SJ2 value edit | `Sheet8.Worksheet_Change` | `GetNextInvoiceNumber` / `SyncToCRJ` | M/O formula set and CRJ sync with alternate numbering | SJ2, CRJ |
 | Manual SJ sync | `Sheet3.ManualSyncToCRJ` | `modEngine.SyncSJToCRJ` | Sync active SJ row to CRJ | CRJ |
 | Manual PJ sync | `Sheet11.ManualSyncToCDJ` / `Sheet12.ManualSyncToCDJ` | `modEngine.SyncPJNonVatToCDJ` / `SyncPJToCDJ` | Sync active PJ row to CDJ | CDJ |
 | GL refresh | `modGLRefresh.RefreshGL` (and wrappers) | `modGLScanEngine.ScanGL(2026)` | Validate, scan CDJ/CRJ, gate, write GL | GL, GL_AUDIT |
@@ -205,7 +205,7 @@ flowchart TD
     J --> K["Write V = F, W = SUM(G:T), X = V+W<br/>Shift cached references at or below row"]
     I --> L["Write row fields"]
     K --> L
-    L --> M["date, day, particulars, cash, VAT, EWT, reference, allocation, note"]
+    L --> M["date, particulars, cash, VAT, EWT, reference, allocation, note (day only on SyncPJToCDJ)"]
     C --> N["Clear allocation columns N:T, rewrite allocation and note"]
 ```
 
@@ -232,7 +232,7 @@ flowchart TD
     I["Undeclared COL_* constants in Sheet9"] -. runtime defect .-> A
 ```
 
-This path is compiled but not reliable. `Sheet9` has no `Option Explicit` and does not declare its `COL_*` constants, so the event logic does not resolve the intended columns. The active non-VAT path is Sheet11 plus `modEngine.SyncPJNonVatToCDJ`.
+This path is compiled but not reliable. `Sheet9` has no `Option Explicit` and does not declare its `COL_*` constants, so the event logic does not resolve the intended columns. The intended non-VAT path is Sheet11 plus `modEngine.SyncPJNonVatToCDJ`; Sheet9 remains wired and callable.
 
 ## 6. Sales journal to CRJ
 
@@ -245,7 +245,7 @@ sequenceDiagram
     participant CRJ as CRJ
     User->>SJ: edit customer, amount, discount
     SJ->>SJ: write number formats and VAT/net formulas
-    alt invoice column empty and date and amount present
+    alt invoice empty and amount present (Sheet8 also requires date)
         SJ->>Engine: GetNextInvoiceNumber
         Engine-->>SJ: next CRJ sequence
         alt Sheet3 SJ
@@ -490,9 +490,9 @@ Static-analysis warning: the status test is `InStr(st, "MAPPED") > 0`. `UNMAPPED
 
 | Map | Columns | Accounts |
 |---|---|---|
-| `V8_CDJMap` | 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 | Input VAT, EWT Payable, Petty Cash Fund, Government Contributions (EE), Government Loans (EE), De Minimis, Salaries and Wages, Clinic Material and Supplies, Rent, Gas/Oil/Parking/Toll Fees, Light and Water Expense, Professional Fees |
-| `V8_CRJMap` | 9, 10, 11, 12 | Excess CWT Over IT, VAT Payable, Sales, Sales |
-| `V8_ResolveAccount` hard-coded | label text | Transportation and Travel, Advances to Employees, Repair and Maintenance, VAT Payable, Clinic Material and Supplies, Dental Equipment, Miscellaneous, plus the clinic-supplies/medical-equipment variants |
+| `V8_CDJMap` | 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18 | Cash in Bank, Input VAT, EWT Payable, Petty Cash Fund, Government Contributions (EE), Government Loans (EE), De Minimis, Salaries and Wages, Clinic Material and Supplies, Rent, Gas/Oil/Parking/Toll Fees, Light and Water Expense, Professional Fees |
+| `V8_CRJMap` | 8, 9, 10, 11, 12 | Cash in Bank, Excess CWT Over IT, VAT Payable, Sales, Sales |
+| `V8_ResolveAccount` hard-coded | label text | Transportation and Travel, Advances to Employees, Repair and Maintenance, VAT Payable, Clinic Material and Supplies, Dental Equipment, Miscellaneous, plus the cost-of-revenue, supplies, bank-charge and charges variants |
 
 The hard-coded aliases are executable at runtime. They are not the same thing as an accounting approval; see the policy note in `VBA_CODEBASE.md`.
 
@@ -828,21 +828,36 @@ flowchart LR
 
 ### 12.4 SJ / SJ2
 
+Sheet3 (SJ) layout (`Sheet3.txt:7-19`):
+
 | Column | Letter | Use |
 |---|---|---|
 | 3 | C | Date |
 | 6 | F | Customer |
 | 7 | G | Customer address |
 | 8 | H | Description |
-| 9 | I | Physical invoice (manual; not overwritten by Sheet3) |
+| 9 | I | Physical invoice (manual; not overwritten) |
 | 10 | J | Amount |
 | 11 | K | Discount |
 | 12 | L | Output VAT mirror |
 | 13 | M | Output VAT |
 | 14 | N | Net sales mirror |
 | 15 | O | Net sales |
-| 21 | U | Auto invoice key (`SJ-#####` on Sheet3) |
-| 22 | V | Full ID (`SJINV-...` on Sheet3) |
+| 21 | U | Auto invoice key (`SJ-#####`) |
+| 22 | V | Full ID (`SJINV-...`) |
+
+Sheet8 (SJ2) layout (`Sheet8.txt:11-18`):
+
+| Column | Letter | Use |
+|---|---|---|
+| 3 | C | Date |
+| 6 | F | Customer |
+| 9 | I | Auto invoice number |
+| 10 | J | Amount |
+| 11 | K | Discount |
+| 13 | M | Output VAT |
+| 15 | O | Net sales |
+| 21 | U | Reference |
 
 ### 12.5 GL, GL_AUDIT, COA_MAP, SUPPLIERS DATA
 
@@ -892,11 +907,11 @@ flowchart TD
     H --> H1["Sync exits without writing"]
     B -->|ambiguous supplier TIN| I["IsAmbiguousTIN true"]
     I --> I1["Stop; no supplier guess, no add"]
-    B -->|supplier sync write error| J["Empty ErrorHandler in modEngine syncs"]
-    J --> J1["Error swallowed; source and CDJ/CRJ may diverge"]
+    B -->|supplier sync early error| J["Empty ErrorHandler before On Error GoTo 0"]
+    J --> J1["Initialization/target-lookup error swallowed; writes after handler disabled propagate"]
 ```
 
-The first five paths are deliberately fail-closed. The last one is the opposite: the public sync routines do not report write errors. A reviewer should treat "no message" as "no proof of a successful write" for those routines.
+The first five paths are deliberately fail-closed. The last path is different: empty handlers can swallow errors during initialization or target-sheet lookup, but `On Error GoTo 0` at `modEngine.bas:851`, `:978`, `:1249` disables the handler before the write body, so write errors propagate. The later pointer writes are separately suppressed by `On Error Resume Next` at `modEngine.bas:955-957`, `:1030-1032`, `:1323-1325`.
 
 ## 14. Legacy and dead paths
 
@@ -1092,7 +1107,7 @@ If the month cannot be resolved or no legal placement is available, the write is
 
 ```text
 Sheet3.Worksheet_Change
-  -> modEngine.GetNextInvoiceNumber (only when date + amount present)
+  -> modEngine.GetNextInvoiceNumber (Sheet3: amount/TOTAL present; Sheet8: date + amount present)
   -> modEngine.SyncSJToCRJ
      -> FindCRJRow(invoice)
      -> update existing or append at gNextCRJRow
