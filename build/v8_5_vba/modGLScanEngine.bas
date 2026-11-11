@@ -310,9 +310,15 @@ End Sub
 
 Private Sub WriteScanAudit(ByVal gd As Double, ByVal gc As Double, ByVal um As Double, ByVal inv As Long, ByVal detail As String)
     Dim ws As Worksheet, r As Long, status As String
-    On Error Resume Next: Set ws = ThisWorkbook.Worksheets(AUDIT_SHEET)
-    If ws Is Nothing Then Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.count)): ws.name = AUDIT_SHEET
+    On Error Resume Next
+    Set ws = ThisWorkbook.Worksheets(AUDIT_SHEET)
+    If ws Is Nothing Then
+        Set ws = Nothing
+        Set ws = ThisWorkbook.Worksheets.Add(After:=ThisWorkbook.Worksheets(ThisWorkbook.Worksheets.Count))
+        If Not ws Is Nothing Then ws.Name = AUDIT_SHEET
+    End If
     On Error GoTo 0
+    If ws Is Nothing Then Exit Sub
     status = IIf(Abs(gd - gc) <= TOLERANCE And um <= TOLERANCE And inv = 0, "PASS", "HOLD")
     r = ws.Cells(ws.Rows.count, 1).End(xlUp).Row + 1
     ws.Cells(r, 1).Value = Now
