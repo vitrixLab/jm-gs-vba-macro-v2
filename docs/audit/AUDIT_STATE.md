@@ -1,8 +1,8 @@
 # Audit state
 
-Current phase: **Step 0 complete; Phase 4 documentation fixes next.**
-Branch: `audit/vba-docs-sync` at HEAD `dc9dbfa`.
-Phase 3 is committed and published. Canonical `build/v8_5_vba/` is tracked. The privacy scan is recorded. No VBA source or workbook was modified.
+Current phase: **Step 0 complete; Phase 5 VBA source fixes in progress.**
+Branch: `audit/vba-docs-sync` at HEAD `c4e7ae1`.
+Phase 3 and documentation fixes are committed. Canonical `build/v8_5_vba/` is tracked. Held code findings are recorded in `docs/audit/blocked.md`. No live Excel compile or run has been performed.
 
 ## Phase status
 
