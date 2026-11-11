@@ -21,7 +21,7 @@ Included here:
 
 Not reproduced (to avoid duplicate/older code misleading the analysis):
 
-- `vba/` contains the v8.4.1 copies of the four GL modules. They are byte-identical to the v8.5 export except for the exported `Attribute VB_Name` header line, so this document uses the v8.5 copies.
+- `vba/` contains the v8.4.1 copies of the four GL modules. They have the same logic as the v8.5 export after normalizing the exported `Attribute VB_Name` header line, a UTF-8 BOM on the `vba/` copies, and trailing blank lines, so this document uses the v8.5 copies.
 - `build/baseline_vba/` and `patch/claude code/` contain baseline/patch copies of `modEngine` and the PJ sheet patch. The current `modEngine` is a superset; the older copies are not the running code.
 - `_inspect/all_vba.txt` is an older one-file export of the workbook and is not the v8.5 project.
 - Empty worksheet modules contain no code; they are listed in Section 3 but not expanded.
@@ -70,7 +70,7 @@ Not reproduced (to avoid duplicate/older code misleading the analysis):
 | `Sheet15` | GL_AUDIT |
 | `Sheet17` | V8.3_FINAL_REVIEW |
 
-The exported component set confirms that the active code is concentrated in `modEngine`, `modGLScanEngine`, `modGLWorkbookMap` and the PJ/SJ event modules. `GL`, `CRJ`, `COA_MAP`, `GL_AUDIT`, `PJ2`, `CRJ2`, `CDJ old` and `V8.3_FINAL_REVIEW` have empty code modules.
+The exported component set confirms that the active code is concentrated in `modEngine`, `modGLScanEngine`, `modGLWorkbookMap` and the PJ/SJ event modules. `GL`, `CRJ`, `CDJ`, `GJ`, `COA_MAP`, `GL_AUDIT`, `PJ2`, `CRJ2`, `CDJ old` and `V8.3_FINAL_REVIEW` have empty code modules.
 
 ## 4. Static-analysis observations
 
@@ -78,7 +78,7 @@ These are source-level observations from the snapshot, not a substitute for a co
 
 ### 4.1 High-impact observations
 
-1. **`Sheet9` references undeclared column constants.** `Sheet9.txt:78`, `:135`, `:187`, `:205`, `:212`, `:252` use `COL_TIN`, `COL_NAME`, `COL_AMOUNT`, `COL_DEBIT`, `COL_REF`, `COL_COA`, `COL_FULL_ID` without declaring them. The module has no `Option Explicit`, so they become empty Variants; column comparisons never match, and `Cells(row, COL_REF)` uses column 0. The legacy PJ Non-Vat2 path is therefore not reliable. The active Sheet12/Sheet11 implementations do declare their constants.
+1. **`Sheet9` references undeclared column constants.** `Sheet9.txt:78`, `:135`, `:187`, `:205`, `:212`, `:252` use `COL_TIN`, `COL_NAME`, `COL_AMOUNT`, `COL_DEBIT`, `COL_REF`, `COL_COA`, `COL_FULL_ID` without declaring them. The module has no `Option Explicit`, so they become empty Variants; column comparisons never match, and `Cells(row, COL_REF)` uses column 0. It also leaves `START_ROW` (`:72`, `:249`) and `COL_DEBIT_MIRROR` (`:169`, `:226`) undeclared. The legacy PJ Non-Vat2 path is therefore not reliable. The active Sheet12/Sheet11 implementations do declare their constants.
 2. **COA status matching accepts `UNMAPPED`.** `modGLWorkbookMap.bas:75` tests `InStr(st, "MAPPED") > 0`. That substring is also present in `UNMAPPED`. If operators use `UNMAPPED` as a status, the alias is accepted even though the gate intends to hold unapproved labels. Prefer exact token/equality matching (`st = "MAPPED"` or an explicit allow-list).
 3. **Hard-coded HOLD aliases are executable.** `modGLWorkbookMap.bas:139-143` maps `MEDICAL EQUIPMENT`, `COST OF REVENUE`, `SUPPLIES`, `BANK CHARGE` and `CHARGES` (plus the earlier five aliases) directly to GL accounts. The README says the supplied sundry labels are not assumed approved; the code nevertheless resolves several of them. This is a policy/implementation mismatch that should be resolved explicitly.
 4. **The scan year is not enforced.** `modGLScanEngine.bas:82` and `:169` take `yr` but never use it. `ScanGL 2026` therefore aggregates all matching rows by month; it does not filter by year. CRJ additionally relies on partition order and the first boundary being January. This is safe only while the workbook contains one reporting year and correct boundaries.
@@ -88,15 +88,15 @@ These are source-level observations from the snapshot, not a substitute for a co
 
 6. **The gate is correctly positioned before GL write-back.** `ScanGL` writes only `GL_AUDIT` when `inv > 0`, unmapped amount exceeds tolerance, or debit/credit difference exceeds tolerance. `WriteScannedGL` is reached only after the gate passes.
 7. **Duplicate/missing GL titles are validated twice.** `ValidateV8Structure` checks 46 nonblank titles; `ValidateGLAccountTitles` additionally detects duplicates (normalized, case-insensitive) and increments the invalid count. The scan aborts before writing if the count is nonzero.
-8. **Sundry T/U disagreements are audit-only.** `ScanCDJ` derives the Sundry amount from the balanced row, records a correction note when the explicit T/U values differ, but does not increment `inv`. The gate can therefore PASS with a logged correction; this is intentional in the comments but should be understood by reviewers.
-9. **Sync errors are swallowed.** The three public sync routines in `modEngine` (`SyncPJToCDJ`, `SyncSJToCRJ`, `SyncPJNonVatToCDJ`) end with empty `ErrorHandler:` labels. A failed write can leave the source journal and CDJ/CRJ out of sync without surfacing an error to the operator.
+8. **Sundry T/U numeric disagreements are audit-only.** `ScanCDJ` derives the Sundry amount from the balanced row and records a correction note when the explicit T/U values are numeric but differ, without incrementing `inv`; the gate can therefore PASS with a logged correction. Nonnumeric T/U values do increment `inv` at `modGLScanEngine.bas:153,156` and can force HOLD.
+9. **Sync error handling changes after target resolution.** The three public sync routines in `modEngine` (`SyncPJToCDJ`, `SyncSJToCRJ`, `SyncPJNonVatToCDJ`) end with empty `ErrorHandler:` labels, but each runs `On Error GoTo 0` immediately after resolving the target sheet (`modEngine.bas:851`, `:978`, `:1249`). Errors after that point, including writes, propagate to the caller. The empty handler can still swallow errors raised during initialization or target-sheet lookup; the final pointer-update writes are separately suppressed by `On Error Resume Next` (`:956-957`, `:1031-1032`, `:1324-1325`).
 10. **Destructive supplier import.** `ImportSuppliersFromJSON.bas:13` clears `SUPPLIERS DATA` rows 2..end before inserting hard-coded records. It is not part of the normal event flow, but it is present in the same VBA project and can be run from the macro dialog.
 
 ### 4.3 Legacy and maintenance notes
 
 11. **Legacy GJ/calc code remains in `modEngine`.** `GLScanGJ` (`:1494`), `Legacy_RefreshGL` (`:1537`), `Legacy_CalculateMonthlyNet` (`:1679`), `Legacy_ValidateGLConsistency` (`:1710`), `Legacy_RefreshAllGL` (`:1721`) and `BuildV8CalcSheet` (`:1771`) are still compiled. They are not on the active `ScanGL` path, but they keep GJ and `GL_V8_CALC` concepts alive in the source and may be reachable from other macros.
 12. **Duplicate implementations.** Sheet11 and Sheet12 duplicate supplier lookup, totals and event orchestration; Sheet3 and Sheet8 duplicate SJ logic with different invoice-number formats. Sheet9 and modPJSync duplicate an older non-VAT path. Fixes must be applied in multiple places.
-13. **Workbook-level verification is still required.** The v8.5 build has a recorded compile PASS and a v8.4.1 live refresh HOLD, but this snapshot alone cannot prove the embedded VBA matches these files or that a live scan passes. Use Excel Desktop/COM for that boundary.
+13. **Workbook-level verification is still required.** The recorded compile PASS (`build/artifacts/compile.log:1`, 17:42) predates the current `modGLGate.bas` (18:28) and workbook (18:25), and the export contains a duplicate `n` declaration at `modGLGate.bas:13,29`. The v8.4.1 live refresh returned HOLD. This snapshot alone cannot prove the embedded VBA matches these files or that a live scan passes. Use Excel Desktop/COM for that boundary.
 
 ## 5. Procedure index
 
@@ -5767,7 +5767,7 @@ End Sub
 | Path | What it contains | Use in this analysis |
 |---|---|---|
 | `build/v8_5_vba/` | Full v8.5 VBA export, one file per component | **Canonical source for this document** |
-| `vba/` | v8.4.1 copies of `modGLGate`, `modGLRefresh`, `modGLScanEngine`, `modGLWorkbookMap` | Same logic as the v8.5 export except the export header; not reproduced separately |
+| `vba/` | v8.4.1 copies of `modGLGate`, `modGLRefresh`, `modGLScanEngine`, `modGLWorkbookMap` | Same logic as the v8.5 export after normalizing the header, BOM and trailing blank lines; not reproduced separately |
 | `build/baseline_vba/` | Baseline export used by the v8.5 build diff | Historical comparison only |
 | `build/post_vba/` | Post-patch Sheet11/Sheet12 exports | Historical build artifact |
 | `patch/claude code/` | v7.9.5 `modEngine` patch and PJ sheet patch | Historical patch source; not the current superset |
@@ -5776,7 +5776,7 @@ End Sub
 ### Build/verification artifacts referenced by the code
 
 - `build/verify_summary.json`: v8.5 changed modules (`Sheet11`, `Sheet12`, `modEngine`) and workbook SHA-256.
-- `build/artifacts/compile.log`: recorded `compile PASS`.
+- `build/artifacts/compile.log`: recorded `compile PASS` at 17:42, predating the current `modGLGate.bas` (18:28) and workbook (18:25); stale for this export.
 - `GL_REBUILD_VERIFICATION_REPORT.md`: v8.4.1 live refresh returned `HOLD` on the duplicate GL title and unmapped Sundry amounts.
 - `scripts/verify_full_gl.py` and `tests/`: source-level checks for scope and duplicate-account guards.
 
