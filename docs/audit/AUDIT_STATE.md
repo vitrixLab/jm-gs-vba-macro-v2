@@ -12,7 +12,7 @@ Phase 3 is committed and published. Canonical `build/v8_5_vba/` is tracked. The 
 | 1 - Inventory | Complete | `01_inventory.md` |
 | 2 - Claim verification | Complete | `02_claims.md` |
 | 3 - Findings | Complete | `03_findings.md` |
-| 4 - Documentation fixes | In progress | `VBA_CODEBASE.md`, `VBA_CODE_FLOW.md` |
+| 4 - Documentation fixes | Complete | `VBA_CODEBASE.md` commit `daf0e52`; `VBA_CODE_FLOW.md` commit `0a9d203` |
 | 5 - VBA source fixes | Not started | `build/v8_5_vba/` |
 | 6 - Checker and report | Not started | `scripts/`, `docs/audit/06_report.md` |
 
@@ -38,7 +38,7 @@ Phase 3 is committed and published. Canonical `build/v8_5_vba/` is tracked. The 
 
 ## Open decisions
 
-Approved behavioural fixes: C-02, C-03, C-04, C-08, C-09. Held: C-05, C-06, C-10. The remaining code findings are mechanical fixes. Documentation findings D-01 through D-13 can be corrected in Phase 4 without changing workbook behaviour.
+Approved behavioural fixes: C-02, C-03, C-04, C-08, C-09. Held: C-05, C-06, C-10. The remaining code findings are mechanical fixes. Documentation findings D-01 through D-13 are fixed.
 
 ## Evidence boundary
 
