@@ -1,9 +1,18 @@
 # Phase 3 - Findings
 
-All findings are open. No code or documentation was changed in Phases 0-3.
+Findings recorded in Phase 3. Code fixes C-01 through C-15 are committed on branch `audit/vba-docs-sync`; documentation fixes D-01 through D-13 are committed. Held items are in `docs/audit/blocked.md`.
 
-Severity counts: **1 Critical, 4 High, 12 Medium, 9 Low, 1 Info**.
-Proposed phases: **P4 = documentation fixes**, **P5 = VBA source fixes**, **P6 = checker/report**. Behaviour-changing fixes need a decision entry before editing.
+Severity counts: **1 Critical, 4 High, 13 Medium, 9 Low, 1 Info** (28 total: 15 code, 13 documentation).
+Phases: **P4 = documentation fixes**, **P5 = VBA source fixes**, **P6 = checker/report**. Behaviour-changing fixes needed a decision entry before editing.
+
+## Resolution status
+
+Fixed in code commits:
+- C-01 `da6c790`, C-14 `f75bb4f`, C-03 `97c9c16`, C-04 `ae2c755`, C-07 `49ff9dd`, C-11 `b1c4569`, C-12 `5fce068`, C-13 `5a63ce5`, C-02 `145145e`, C-15 `56bc67b`, C-08 `ab1b04d`, C-09 `26a6da3`.
+- Documentation fixes D-01 through D-13 in commits `daf0e52` and `0a9d203`.
+
+Held (do not edit; see `docs/audit/blocked.md`):
+- C-05, C-06, C-10.
 
 ## Code findings
 

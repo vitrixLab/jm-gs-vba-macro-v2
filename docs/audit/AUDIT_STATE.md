@@ -1,8 +1,8 @@
 # Audit state
 
-Current phase: **Step 0 complete; Phase 5 VBA source fixes in progress.**
-Branch: `audit/vba-docs-sync` at HEAD `c4e7ae1`.
-Phase 3 and documentation fixes are committed. Canonical `build/v8_5_vba/` is tracked. Held code findings are recorded in `docs/audit/blocked.md`. No live Excel compile or run has been performed.
+Current phase: **Step 3 complete; awaiting review.**
+Branch: `audit/vba-docs-sync` at HEAD `26a6da3` (Step 3 report commit pending).
+Phases 0-5 are complete. Canonical `build/v8_5_vba/` is tracked. Held code findings are recorded in `docs/audit/blocked.md`. No live Excel compile or run has been performed.
 
 ## Phase status
 
@@ -13,8 +13,8 @@ Phase 3 and documentation fixes are committed. Canonical `build/v8_5_vba/` is tr
 | 2 - Claim verification | Complete | `02_claims.md` |
 | 3 - Findings | Complete | `03_findings.md` |
 | 4 - Documentation fixes | Complete | `VBA_CODEBASE.md` commit `daf0e52`; `VBA_CODE_FLOW.md` commit `0a9d203` |
-| 5 - VBA source fixes | Not started | `build/v8_5_vba/` |
-| 6 - Checker and report | Not started | `scripts/`, `docs/audit/06_report.md` |
+| 5 - VBA source fixes | Complete | commits C-01 da6c790, C-14 f75bb4f, C-03 97c9c16, C-04 ae2c755, C-07 49ff9dd, C-11 b1c4569, C-12 5fce068, C-13 5a63ce5, C-02 145145e, C-15 56bc67b, C-08 ab1b04d, C-09 26a6da3 |
+| 6 - Checker and report | Complete | `scripts/check_docs.py`, `scripts/check_vba_static.py`, `docs/audit/06_report.md` |
 
 ## Counts
 
@@ -27,12 +27,12 @@ Phase 3 and documentation fixes are committed. Canonical `build/v8_5_vba/` is tr
 | Claims verified | 33 |
 | Claims partial | 7 |
 | Claims wrong | 8 |
-| Findings | 27 |
-| Code findings | 14 |
+| Findings | 28 |
+| Code findings | 15 |
 | Documentation findings | 13 |
 | Critical | 1 |
 | High | 4 |
-| Medium | 12 |
+| Medium | 13 |
 | Low | 9 |
 | Info | 1 |
 
