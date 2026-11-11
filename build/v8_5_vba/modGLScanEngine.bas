@@ -29,6 +29,16 @@ Public Sub ScanGL(Optional ByVal yearNumber As Long = 2026)
     ' Pick up any operator edit to the COA_MAP alias table before mapping.
     V8_MapReset
 
+    ' Fail closed before scanning: structure must match the expected layout.
+    If Not ValidateV8Structure() Then
+        inv = inv + 1
+        detail = detail & "GL structure validation failed; scan aborted." & vbCrLf
+        WriteScanAudit gd, gc, um, inv, detail
+        If Application.UserControl And Application.DisplayAlerts Then _
+            MsgBox "v8.3.3 SCAN HOLD: GL structure validation failed. GL not overwritten.", vbExclamation
+        Exit Sub
+    End If
+
     Set d = CreateObject("Scripting.Dictionary")
     d.CompareMode = vbTextCompare
 

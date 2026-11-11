@@ -37,14 +37,8 @@ Public Function ValidateV8Structure() As Boolean
 End Function
 
 Public Sub RunV8Gate()
-    If Not ValidateV8Structure() Then
-        If Application.UserControl And Application.DisplayAlerts Then _
-            MsgBox "GL gate HOLD: CDJ/CRJ/GL/COA_MAP structure does not match the expected layout.", vbExclamation
-        Exit Sub
-    End If
-
-    ' Use the current fail-closed CDJ + CRJ scan. Do not invoke the legacy
-    ' GL_V8_CALC builder or inspect the excluded GJ worksheet.
+    ' Structure validation is performed inside ScanGL (single choke point).
+    ' This wrapper keeps the public entry point and lets ScanGL own the HOLD path.
     ScanGL 2026
 End Sub
 
