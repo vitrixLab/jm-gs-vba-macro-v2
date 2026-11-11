@@ -969,7 +969,7 @@ Public Sub SyncSJToCRJ(sourceSheet As Worksheet, sourceRow As Long)
     Dim referenceInvoiceNum As Variant
     Dim customerName As String
     Dim dateVal As Variant
-    Dim amount As Double, discount As Double, outputVAT As Double, netSales As Double
+    Dim amount As Double, amountRaw As Variant, discount As Double, outputVAT As Double, netSales As Double
     Dim cashInBank As Double
     On Error GoTo ErrorHandler
     If Not gInitializedCRJ Then Call InitializeCRJ
@@ -982,12 +982,14 @@ Public Sub SyncSJToCRJ(sourceSheet As Worksheet, sourceRow As Long)
     customerName = Trim(sourceSheet.Cells(sourceRow, SJ_COL_CUSTOMER).Value)
     dateVal = sourceSheet.Cells(sourceRow, SJ_COL_DATE).Value
     referenceInvoiceNum = sourceSheet.Cells(sourceRow, SJ_COL_REFERENCE).Value
-    amount = sourceSheet.Cells(sourceRow, SJ_COL_AMOUNT).Value
+    amountRaw = sourceSheet.Cells(sourceRow, SJ_COL_AMOUNT).Value
     discount = sourceSheet.Cells(sourceRow, SJ_COL_DISCOUNT).Value
     outputVAT = sourceSheet.Cells(sourceRow, SJ_COL_OUTPUTVAT).Value
     netSales = sourceSheet.Cells(sourceRow, SJ_COL_NETSALES).Value
+    If Not IsNumeric(amountRaw) Then Exit Sub
+    amount = CDbl(amountRaw)
     cashInBank = amount - discount
-    If customerName = "" Or amount = 0 Or Not IsNumeric(amount) Then Exit Sub
+    If customerName = "" Or amount = 0 Then Exit Sub
     targetRow = FindCRJRow(CStr(invoiceNum))
     If targetRow > 0 Then
         With wsTarget
