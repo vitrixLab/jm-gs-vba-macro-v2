@@ -82,6 +82,10 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Next cell
 
 Cleanup:
+    If Err.Number <> 0 Then
+        If Application.UserControl And Application.DisplayAlerts Then _
+            MsgBox "Sheet8 sync failed: " & Err.Number & ": " & Err.Description, vbExclamation
+    End If
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.Calculation = xlCalculationAutomatic

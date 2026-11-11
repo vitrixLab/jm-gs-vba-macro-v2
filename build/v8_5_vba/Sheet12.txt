@@ -192,6 +192,7 @@ End Sub
 Private Sub Worksheet_Change(ByVal Target As Range)
     Dim rngLookup As Range, rngSync As Range, cell As Range
     Dim currentTimestamp As String, newRef As String
+    Dim lookupFailed As Boolean
 
     ' ---- PART 1: LOOKUP, VAT, ID STAMPING AND SYNC ----
     Set rngLookup = Intersect(Target, Union(Me.Range("B:B"), Me.Range("D:D"), Me.Range("E:E"), _
@@ -201,6 +202,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         Application.EnableEvents = False
         Application.ScreenUpdating = False
         Application.Calculation = xlCalculationManual
+        lookupFailed = False
         On Error GoTo CleanupLookup
         currentTimestamp = Format(Now, "yyyymmdd-HHnnSS")
 
@@ -253,7 +255,13 @@ CleanupLookup:
         Application.EnableEvents = True
         Application.ScreenUpdating = True
         Application.Calculation = xlCalculationAutomatic
+        If Err.Number <> 0 Then
+            lookupFailed = True
+            If Application.UserControl And Application.DisplayAlerts Then _
+                MsgBox "Part 1 sync failed: " & Err.Number & ": " & Err.Description, vbExclamation
+        End If
     End If
+    If lookupFailed Then Exit Sub
 
     ' ---- PART 2: SYNC (Triggered by Column H) ----
     ' Kept as a safety fallback (will do nothing if already synced)
