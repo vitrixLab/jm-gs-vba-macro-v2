@@ -1221,8 +1221,11 @@ Public Sub ResetCDJ()
     Call LoadCDJReferences
     Application.EnableEvents = True
     Application.ScreenUpdating = True
+    Dim seqAddr As String, nextAddr As String
+    seqAddr = Replace(ws.Cells(CDJ_ROW_SEQ, CDJ_COL_SEQ).Address, "$", "")
+    nextAddr = Replace(ws.Cells(CDJ_ROW_NEXTROW, CDJ_COL_NEXTROW).Address, "$", "")
     MsgBox "CDJ has been reset." & vbCrLf & _
-           "Sequence (Z13) = 0, Next row (Z14) = " & CDJ_DATA_START, vbInformation
+           "Sequence (" & seqAddr & ") = 0, Next row (" & nextAddr & ") = " & CDJ_DATA_START, vbInformation
     Exit Sub
 Cleanup:
     On Error Resume Next
