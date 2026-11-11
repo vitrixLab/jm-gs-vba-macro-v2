@@ -1,8 +1,8 @@
 # Audit state
 
 Current phase: **Step 3 complete.**
-Branch: `audit/vba-docs-sync` at HEAD `d1ac9e3`.
-Phases 0-3 and Step 3 are committed. Canonical `build/v8_5_vba/` is tracked. Held code findings are recorded in `docs/audit/blocked.md`. No live Excel compile or run has been performed.
+Branch: `audit/vba-docs-sync` at HEAD `1a7cde6`.
+Phases 0-3 and Step 3 are committed and pushed to origin. Canonical `build/v8_5_vba/` is tracked. Held code findings are recorded in `docs/audit/blocked.md`. No live Excel compile or run has been performed.
 
 ## Phase status
 

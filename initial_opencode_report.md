@@ -3,7 +3,7 @@
 Date: 2026-11-11
 Branch: `audit/vba-docs-sync`
 Base commit: `2f44164` (`docs: add full VBA codebase and flow analysis`)
-Status: **Phases 0-3 complete. Awaiting approval before Phase 4.**
+Status: **Phases 0-3 and Step 3 complete. Committed and pushed to origin/audit/vba-docs-sync at `1a7cde6`.**
 
 ## 1. Executive summary
 
@@ -12,9 +12,9 @@ The audit compared `VBA_CODEBASE.md` and `VBA_CODE_FLOW.md` against the exported
 - The documentation is substantially accurate: all 146 procedures, all 15 full-source reproductions, module line counts, and the workbook SHA-256 were verified.
 - Most material claims were confirmed: 33 of 48 checked claims are fully `VERIFIED`.
 - 8 claims are `WRONG` and 7 are `PARTIAL`, mainly around the SJ/SJ2 layouts, non-VAT CDJ fields, error handling, and the compile-pass claim.
-- 27 findings were recorded: **1 Critical, 4 High, 12 Medium, 9 Low, 1 Info**.
-- The most important code defect is a duplicate local declaration in `modGLGate.ValidateV8Structure`, which prevents the exported project from compiling under standard VBA scoping rules.
-- No VBA source or workbook was modified. No live Excel compile or run was performed.
+- 28 findings were recorded: **1 Critical, 4 High, 13 Medium, 9 Low, 1 Info** (15 code, 13 documentation).
+- The most important code defect was a duplicate local declaration in `modGLGate.ValidateV8Structure` (`modGLGate.bas:13,29`), fixed by renaming the counter to `nonblank`.
+- Exported VBA fixes were committed to `build/v8_5_vba/`; no `.xlsm`/`.xlsb`/`.xls`/`vbaProject.bin` was modified. No live Excel compile or run was performed.
 
 ## 2. Scope and sources
 
