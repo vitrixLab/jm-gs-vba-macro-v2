@@ -20,6 +20,11 @@ Private Const MONTHS As Long = 12
 Public Sub ScanGL(Optional ByVal yearNumber As Long = 2026)
     Dim d As Object, gd As Double, gc As Double, um As Double, inv As Long
     Dim detail As String, ws As Worksheet
+    Dim savedUpdating As Boolean, savedEvents As Boolean, savedCalc As Long
+    savedUpdating = Application.ScreenUpdating
+    savedEvents = Application.EnableEvents
+    savedCalc = Application.Calculation
+    On Error GoTo ScanGLFail
 
     ' Pick up any operator edit to the COA_MAP alias table before mapping.
     V8_MapReset
@@ -66,6 +71,20 @@ Public Sub ScanGL(Optional ByVal yearNumber As Long = 2026)
                "Unmapped: " & Format$(um, "0.00") & vbCrLf & _
                "Invalid: " & inv, vbInformation
     End If
+Exit Sub
+ScanGLFail:
+    On Error Resume Next
+    Application.ScreenUpdating = savedUpdating
+    Application.EnableEvents = savedEvents
+    Application.Calculation = savedCalc
+    If Err.Number <> 0 Then
+        If Application.UserControl And Application.DisplayAlerts Then _
+            MsgBox "v8.3.3 SCAN ERROR " & Err.Number & ": " & Err.Description, vbExclamation
+        On Error Resume Next
+        Call WriteScanAudit(gd, gc, um, inv, detail & vbCrLf & "SCAN ERROR " & Err.Number & ": " & Err.Description)
+        On Error GoTo 0
+    End If
+    Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
 
 Private Sub AddPost(ByVal d As Object, ByVal acct As String, ByVal m As Long, ByVal db As Double, ByVal cr As Double)
