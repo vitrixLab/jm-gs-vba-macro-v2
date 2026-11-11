@@ -360,11 +360,11 @@ Private Sub LoadCDJReferences()
     If ws.Cells(ws.Rows.count, CDJ_COL_REF_LEGACY).End(xlUp).Row > lastRow Then _
         lastRow = ws.Cells(ws.Rows.count, CDJ_COL_REF_LEGACY).End(xlUp).Row
     For i = CDJ_DATA_START To lastRow
-        ref = Trim(ws.Cells(i, CDJ_COL_REF).Value)
+        ref = CellText(ws, i, CDJ_COL_REF)
         If ref <> "" Then dictRef(ref) = i
-        ref = Trim(ws.Cells(i, CDJ_COL_REF_PNV).Value)
+        ref = CellText(ws, i, CDJ_COL_REF_PNV)
         If ref <> "" Then dictRef(ref) = i
-        ref = Trim(ws.Cells(i, CDJ_COL_REF_LEGACY).Value)
+        ref = CellText(ws, i, CDJ_COL_REF_LEGACY)
         If ref <> "" And Not dictRef.Exists(ref) Then dictRef(ref) = i
     Next i
 End Sub
@@ -530,7 +530,7 @@ Private Sub LoadCRJReferences()
     If ws Is Nothing Then Exit Sub
     lastRow = ws.Cells(ws.Rows.count, CRJ_COL_INVOICE).End(xlUp).Row
     For i = CRJ_DATA_START To lastRow
-        inv = Trim(ws.Cells(i, CRJ_COL_INVOICE).Value)
+        inv = CellText(ws, i, CRJ_COL_INVOICE)
         If inv <> "" Then dictCRJRef(inv) = i
     Next i
 End Sub

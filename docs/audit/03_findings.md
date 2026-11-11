@@ -23,6 +23,7 @@ Proposed phases: **P4 = documentation fixes**, **P5 = VBA source fixes**, **P6 =
 | C-12 | Low | `CDJReserveRow` unconditionally sets `EnableEvents = True` in `Done`, even if events were already disabled by the caller. | `modEngine.bas:443-463` | P5 mechanical: save/restore the prior value |
 | C-13 | Low | `ResetCDJ` reports sequence/next-row cells as `Z13`/`Z14`; the constants resolve to `AA13`/`AA14`. | `modEngine.bas:64-71,1211-1212` | P5 mechanical: derive the addresses from the constants |
 | C-14 | Low | `WriteScanAudit` uses `On Error Resume Next` around the sheet lookup and add; if `Worksheets.Add` fails, `ws` is still `Nothing` and the following write raises error 91. | `modGLScanEngine.bas:311-321` | P5 mechanical: handle add failure explicitly and return a status |
+| C-15 | Medium | `LoadCDJReferences`/`LoadCRJReferences` use `Trim(ws.Cells(i, c).Value)`, which raises type mismatch on error cells (#N/A, #REF!) and, under the old `Resume Next`, silently truncated the cache. | `modEngine.bas:363,365,367`; `modEngine.bas:533` | P5 mechanical: replace with existing `CellText(ws, i, c)` helper |
 
 ## Documentation findings
 
