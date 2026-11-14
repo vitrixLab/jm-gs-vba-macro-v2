@@ -140,6 +140,17 @@ Public Function V8_ResolveAccount(ByVal raw As String) As String
         Case "SUPPLIES": V8_ResolveAccount = "Clinic Material and Supplies"
         Case "BANK CHARGE": V8_ResolveAccount = "Miscellaneous"
         Case "CHARGES": V8_ResolveAccount = "Miscellaneous"
+        ' Sundry labels resolved from CDJ scan (typos and alternate labels)
+        Case "REPRESENTATION": V8_ResolveAccount = "Professional Fees"
+        Case "PARTNERS CLINICIANS FEE": V8_ResolveAccount = "Clinician's Fee-Corporators"
+        Case "CLINICIANS FEE- CORPORATOS": V8_ResolveAccount = "Clinician's Fee-Corporators"
+        Case "CLINACIANS FEE- CORPORATORS": V8_ResolveAccount = "Clinician's Fee-Corporators"
+        Case "PARTNERS CLINICIANS FEE- CORPORATORS": V8_ResolveAccount = "Clinician's Fee-Corporators"
+        Case "SSS,HDMF AND PHIC ER SHARE": V8_ResolveAccount = "Government Contributions ER Share"
+        Case "VISITING CLINICIANS FEE": V8_ResolveAccount = "Clinician's Fee-Visiting"
+        Case "INCENTIVES": V8_ResolveAccount = "De Minimis"
+        Case "OUTSIDE SERVICES": V8_ResolveAccount = "Professional Fees"
+        Case "TRAINING AND SEMINAR": V8_ResolveAccount = "Miscellaneous"
         Case Else
             If d.Exists(k) Then
                 V8_ResolveAccount = d(k)

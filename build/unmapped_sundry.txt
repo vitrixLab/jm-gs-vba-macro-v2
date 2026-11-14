@@ -1,0 +1,11 @@
+UNMAPPED SUNDRY LABELS
+Representation	599825.16	141
+Partners Clinicians Fee	99576.84	4
+Clinicians Fee- Corporatos	83702.05	3
+SSS,HDMF AND PHIC ER SHARE	83504.88	5
+Visiting Clinicians Fee	47534.86	5
+Clinacians Fee- Corporators	26331.31	1
+Partners Clinicians Fee- Corporators	16453.66	1
+Incentives	10667.52	1
+Outside Services	4200.00	2
+Training and Seminar	3265.00	1

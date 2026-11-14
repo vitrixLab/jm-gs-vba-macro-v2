@@ -12,7 +12,7 @@ Opening workbook …
   removed : modGLScanEngine
   imported: modGLScanEngine  (16,798 bytes)
   removed : modGLWorkbookMap
-  imported: modGLWorkbookMap  (8,580 bytes)
+  imported: modGLWorkbookMap  (9,513 bytes)
   removed : modEngine
   imported: modEngine  (85,136 bytes)
   removed : modPJSync
@@ -34,7 +34,7 @@ Opening workbook …
   Saved OK
 
 =======================================================
-DONE — Global-Smile_2026-v8.5-applied.xlsm  (3,051,750 bytes)
+DONE — Global-Smile_2026-v8.5-applied.xlsm  (3,049,397 bytes)
 =======================================================
 
 Modules replaced (8 standard + 3 document):
