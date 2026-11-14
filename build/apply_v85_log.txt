@@ -1,0 +1,51 @@
+Source : D:\citrixlabph\globalsmile_v2\Global-Smile_2026-v8.4.1-with-BUG.xlsm
+Output : D:\citrixlabph\globalsmile_v2\Global-Smile_2026-v8.5-applied.xlsm
+VBA src: D:\citrixlabph\globalsmile_v2\build\v8_5_vba
+
+Opening workbook …
+
+── Standard modules ──────────────────────────────
+  removed : modGLGate
+  imported: modGLGate  (1,772 bytes)
+  removed : modGLRefresh
+  imported: modGLRefresh  (768 bytes)
+  removed : modGLScanEngine
+  imported: modGLScanEngine  (16,798 bytes)
+  removed : modGLWorkbookMap
+  imported: modGLWorkbookMap  (8,580 bytes)
+  removed : modEngine
+  imported: modEngine  (85,136 bytes)
+  removed : modPJSync
+  imported: modPJSync  (13,083 bytes)
+  removed : modGraphify
+  imported: modGraphify  (8,689 bytes)
+  removed : ImportSuppliersFromJSON
+  imported: ImportSuppliersFromJSON  (14,518 bytes)
+
+── Document modules ──────────────────────────────
+  replaced: Sheet8 (Sheet8.txt)  93 lines written
+  replaced: Sheet11 (Sheet11.txt)  301 lines written
+  replaced: Sheet12 (Sheet12.txt)  295 lines written
+
+── Compile ───────────────────────────────────────
+  Compile: OK (no dialog appeared)
+
+── Saving → Global-Smile_2026-v8.5-applied.xlsm ─────────────
+  Saved OK
+
+=======================================================
+DONE — Global-Smile_2026-v8.5-applied.xlsm  (3,051,750 bytes)
+=======================================================
+
+Modules replaced (8 standard + 3 document):
+  modGLGate.bas
+  modGLRefresh.bas
+  modGLScanEngine.bas
+  modGLWorkbookMap.bas
+  modEngine.bas
+  modPJSync.bas
+  modGraphify.bas
+  ImportSuppliersFromJSON.bas
+  Sheet8.txt  → Sheet8
+  Sheet11.txt  → Sheet11
+  Sheet12.txt  → Sheet12
