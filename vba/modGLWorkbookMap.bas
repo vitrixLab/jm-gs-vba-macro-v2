@@ -71,7 +71,7 @@ Private Sub EnsureMaps()
         For r = 5 To ws.Cells(ws.Rows.count, 1).End(xlUp).Row
             acct = Trim$(CStr(ws.Cells(r, 4).Value2))
             st = UCase$(Trim$(CStr(ws.Cells(r, 6).Value2)))
-            If Len(acct) > 0 And InStr(st, "MAPPED") > 0 Then
+            If Len(acct) > 0 And st = "MAPPED" Then
                 k = V8_Key(ws.Cells(r, 1).Value2)
                 If Len(k) > 0 And Not al.Exists(k) Then al.Add k, acct
             End If

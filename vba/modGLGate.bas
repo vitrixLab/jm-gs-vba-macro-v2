@@ -25,13 +25,13 @@ Public Function ValidateV8Structure() As Boolean
     ' GJ structure is deliberately not inspected; it is outside GL scan scope.
     Set ws = ThisWorkbook.Worksheets("GL")
     If V8_Norm(ws.Cells(11, 6).Value2) <> "ACCOUNT TITLE" Then Exit Function
-    Dim b As Long, r As Long, n As Long
+    Dim b As Long, r As Long, nonblank As Long
     For b = 0 To 45
         r = 13 + b * 13
         If Len(Trim$(CStr(ws.Cells(r, 6).Value2))) = 0 Then Exit Function
-        n = n + 1
+        nonblank = nonblank + 1
     Next b
-    If n <> 46 Then Exit Function
+    If nonblank <> 46 Then Exit Function
     ValidateV8Structure = True
 End Function
 
