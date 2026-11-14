@@ -29,7 +29,9 @@ class ScopeAndFailClosedTests(unittest.TestCase):
         self.assertLess(guard, cdj)
         self.assertLess(cdj, gate)
         self.assertLess(gate, writeback)
-        self.assertIn("duplicate account title", SCAN)
+        # Duplicate titles are permitted (hard-bound receipt documents).
+        # Only blank/missing account titles trigger a HOLD.
+        self.assertNotIn("duplicate account title", SCAN)
         self.assertIn("missing account title", SCAN)
 
     def test_resolver_is_not_named_for_excluded_journal(self):

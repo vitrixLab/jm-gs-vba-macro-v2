@@ -1,4 +1,4 @@
-Attribute VB_Name = "modGLScanEngine"
+﻿Attribute VB_Name = "modGLScanEngine"
 Option Explicit
 
 ' v8.3.3 SCANNING ENGINE (Hardened)

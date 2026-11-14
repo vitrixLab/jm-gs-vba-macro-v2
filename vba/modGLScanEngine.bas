@@ -251,13 +251,11 @@ End Sub
 ' GJ scan intentionally removed. This workbook's GL input scope is CDJ + CRJ only.
 
 Private Function ValidateGLAccountTitles(ByRef detail As String) As Boolean
-    Dim ws As Worksheet, seen As Object
+    Dim ws As Worksheet
     Dim b As Long, r As Long, title As String, key As String
     Dim valid As Boolean
 
     Set ws = ThisWorkbook.Worksheets(GL_SHEET)
-    Set seen = CreateObject("Scripting.Dictionary")
-    seen.CompareMode = vbTextCompare
     valid = True
 
     For b = 0 To GL_BLOCKS - 1
@@ -268,12 +266,6 @@ Private Function ValidateGLAccountTitles(ByRef detail As String) As Boolean
         If Len(key) = 0 Then
             detail = detail & "GL!F" & r & " missing account title for block " & (b + 1) & vbCrLf
             valid = False
-        ElseIf seen.Exists(key) Then
-            detail = detail & "GL!F" & r & " duplicate account title '" & title & _
-                     "' (first seen at GL!F" & seen(key) & "); write-back held" & vbCrLf
-            valid = False
-        Else
-            seen.Add key, r
         End If
     Next b
 
